@@ -1,0 +1,2 @@
+# vocalonobis2mylist-heroku
+VOCALONOBISのデイリーランキングをマイリストに並べるスクリプトをHerokuで実行する
