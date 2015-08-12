@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+#coding: utf8
+userid="XXXXXXXX@XXXXXXXX"
+passwd="YYYYYYYY"
+mid=ZZZZZZZZ
+import sys, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json
+
+def getToken():
+    html = urllib2.urlopen("http://www.nicovideo.jp/my/mylist").read()
+    for line in html.splitlines():
+        mo = re.match(r'^\s*NicoAPI\.token = "(?P<token>[\d\w-]+)";\s*',line)
+        if mo:
+            token = mo.group('token')
+            break
+    assert token
+    return token
+
+def addvideo_tomylist(mid,smid,desc):
+    cmdurl = "http://www.nicovideo.jp/api/mylist/add"
+    q = {}
+    q['group_id'] = mid
+    q['item_type'] = 0
+    q['item_id'] = smid
+    q['description'] = desc
+    q['token'] = token
+    cmdurl += "?" + urllib.urlencode(q)
+    j = json.load( urllib2.urlopen(cmdurl), encoding='utf8')
+
+def clear_mylist(mid):
+    j = json.load(urllib2.urlopen("http://www.nicovideo.jp/api/mylist/list?group_id=" + str(mid)), encoding='utf8')
+    id_list = []
+    for item in j['mylistitem']:
+        id_list.append(item['item_id'])
+    cmdurl = "http://www.nicovideo.jp/api/mylist/delete?group_id=%s&token=%s" % ( mid, token )
+    for item_id in id_list:
+        cmdurl += "&" + urllib.quote_plus( "id_list[0][]" ) + "=%s" % item_id
+    k = json.load( urllib2.urlopen(cmdurl), encoding='utf8')
+
+def getRanking():
+    rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=1&pages=1")
+    dom = xml.dom.minidom.parse(rss)
+    rank = []
+    for url in dom.getElementsByTagName("link"):
+        rank.append(url.firstChild.data.rsplit('/', 1)[-1])
+    return rank
+
+#ランキング取得
+rank = getRanking()
+
+#ログイン
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+urllib2.install_opener(opener)
+urllib2.urlopen("https://secure.nicovideo.jp/secure/login",
+                urllib.urlencode( {"mail":userid, "password":passwd}) )
+
+#トークン取得
+token = getToken()
+
+#マイリストから動画を全削除
+clear_mylist(mid)
+
+#マイリストに動画を登録
+for i,smid in enumerate(rank):
+    addvideo_tomylist(mid, smid, str(i+1).zfill(3) )
+    time.sleep(0.5)
