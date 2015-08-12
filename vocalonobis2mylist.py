@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #coding: utf8
-userid="XXXXXXXX@XXXXXXXX"
-passwd="YYYYYYYY"
-mid=ZZZZZZZZ
-import sys, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json
+import sys, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json, os
+userid=os.environ.get("V2M_USERID")
+passwd=os.environ.get("V2M_PASSWD")
+mid=os.environ.get("V2M_MID")
 
 def getToken():
     html = urllib2.urlopen("http://www.nicovideo.jp/my/mylist").read()
