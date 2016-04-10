@@ -17,12 +17,13 @@ def getToken():
     return token
 
 
-def addvideo_tomylist(mid,smid,desc):
+def addvideo_tomylist(mid,item,desc):
+    print "adding rank %s: %s\t%s" % (desc, item["smid"], item["title"])
     cmdurl = "http://www.nicovideo.jp/api/mylist/add"
     q = {}
     q['group_id'] = mid
     q['item_type'] = 0
-    q['item_id'] = smid
+    q['item_id'] = item["smid"]
     q['description'] = desc
     q['token'] = token
     cmdurl += "?" + urllib.urlencode(q)
@@ -44,8 +45,11 @@ def getRanking():
     rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=1&pages=1")
     dom = xml.dom.minidom.parse(rss)
     rank = []
-    for url in dom.getElementsByTagName("link"):
-        rank.append(url.firstChild.data.rsplit('/', 1)[-1])
+    for item in dom.getElementsByTagName("item"):
+        rank.append({
+            "title": item.getElementsByTagName("title")[0].firstChild.data,
+            "smid": item.getElementsByTagName("link")[0].firstChild.data.rsplit('/', 1)[-1]
+            })
     return rank
 
 
@@ -67,6 +71,6 @@ if __name__ == "__main__" :
     clear_mylist(mid)
 
     #マイリストに動画を登録
-    for i,smid in enumerate(rank):
-        addvideo_tomylist(mid, smid, str(i+1).zfill(3) )
-        time.sleep(0.5)
+    for i,item in enumerate(rank):
+        addvideo_tomylist(mid, item, str(i+1).zfill(3) )
+        time.sleep(1)
