@@ -5,6 +5,7 @@ userid=os.environ.get("V2M_USERID")
 passwd=os.environ.get("V2M_PASSWD")
 mid=os.environ.get("V2M_MID")
 
+
 def getToken():
     html = urllib2.urlopen("http://www.nicovideo.jp/my/mylist").read()
     for line in html.splitlines():
@@ -14,6 +15,7 @@ def getToken():
             break
     assert token
     return token
+
 
 def addvideo_tomylist(mid,smid,desc):
     cmdurl = "http://www.nicovideo.jp/api/mylist/add"
@@ -26,6 +28,7 @@ def addvideo_tomylist(mid,smid,desc):
     cmdurl += "?" + urllib.urlencode(q)
     j = json.load( urllib2.urlopen(cmdurl), encoding='utf8')
 
+
 def clear_mylist(mid):
     j = json.load(urllib2.urlopen("http://www.nicovideo.jp/api/mylist/list?group_id=" + str(mid)), encoding='utf8')
     id_list = []
@@ -36,6 +39,7 @@ def clear_mylist(mid):
         cmdurl += "&" + urllib.quote_plus( "id_list[0][]" ) + "=%s" % item_id
     k = json.load( urllib2.urlopen(cmdurl), encoding='utf8')
 
+
 def getRanking():
     rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=1&pages=1")
     dom = xml.dom.minidom.parse(rss)
@@ -44,22 +48,25 @@ def getRanking():
         rank.append(url.firstChild.data.rsplit('/', 1)[-1])
     return rank
 
-#ランキング取得
-rank = getRanking()
 
-#ログイン
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
-urllib2.install_opener(opener)
-urllib2.urlopen("https://secure.nicovideo.jp/secure/login",
-                urllib.urlencode( {"mail":userid, "password":passwd}) )
+if __name__ == "__main__" :
 
-#トークン取得
-token = getToken()
+    #ランキング取得
+    rank = getRanking()
 
-#マイリストから動画を全削除
-clear_mylist(mid)
+    #ログイン
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+    urllib2.install_opener(opener)
+    urllib2.urlopen("https://secure.nicovideo.jp/secure/login",
+                    urllib.urlencode( {"mail":userid, "password":passwd}) )
 
-#マイリストに動画を登録
-for i,smid in enumerate(rank):
-    addvideo_tomylist(mid, smid, str(i+1).zfill(3) )
-    time.sleep(0.5)
+    #トークン取得
+    token = getToken()
+
+    #マイリストから動画を全削除
+    clear_mylist(mid)
+
+    #マイリストに動画を登録
+    for i,smid in enumerate(rank):
+        addvideo_tomylist(mid, smid, str(i+1).zfill(3) )
+        time.sleep(0.5)
