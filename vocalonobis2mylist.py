@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#coding: utf8
+# -*- coding: utf8 -*-
 import sys, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json, os
 userid=os.environ.get("V2M_USERID")
 passwd=os.environ.get("V2M_PASSWD")
@@ -54,6 +54,7 @@ def getRanking():
 
 
 if __name__ == "__main__" :
+    sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 
     #ランキング取得
     rank = getRanking()
