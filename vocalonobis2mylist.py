@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import sys, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json, os
+import sys, codecs, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json, os
 userid=os.environ.get("V2M_USERID")
 passwd=os.environ.get("V2M_PASSWD")
 mid=os.environ.get("V2M_MID")
