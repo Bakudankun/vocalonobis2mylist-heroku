@@ -8,7 +8,7 @@ Heroku向け、[VOCALONOBIS](http://vocalonobis.com/)の[RSS](http://vocalonobis
 1. Herokuにデプロイ
 2. Config Variablesの設定で`V2M_USERID`、`V2M_PASSWD`（順にユーザーID、パスワード）を設定
 3. 同じく`MID_DAILY`、`MID_WEEKLY`、`MID_MONTHLY`をそれぞれデイリー、ウィークリー、マンスリーランキング用マイリストのIDナンバーに設定
-3. Heroku Schedulerあたりで毎日`daily``weekly``monthly`するように設定
+3. Heroku Schedulerあたりで毎日`daily` `weekly` `monthly`するように設定
 4. 設定した時間になるまで待つ
 
 
