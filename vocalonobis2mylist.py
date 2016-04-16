@@ -41,8 +41,17 @@ def clear_mylist(mid):
     k = json.load( urllib2.urlopen(cmdurl), encoding='utf8')
 
 
-def getRanking():
-    rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=1&pages=1")
+def getRanking(mode):
+    if mode == "daily" :
+        type = "1"
+    elif mode == "weekly" :
+        type = "2"
+    elif mode == "monthly" :
+        type = "3"
+    else :
+        sys.exit(1)
+
+    rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=" + type + "&pages=1")
     dom = xml.dom.minidom.parse(rss)
     rank = []
     for item in dom.getElementsByTagName("item"):
@@ -55,8 +64,19 @@ def getRanking():
 
 if __name__ == "__main__" :
 
+    argv = sys.argv
+    argc = len(argv)
+
+    if argc < 2 :
+        mode = "daily"
+    elif argv[1] in ["daily", "weekly", "monthly"] :
+        mode = argv[1]
+    else :
+        print "invalid mode: %s\n" % argv[1]
+        sys.exit(1)
+
     #ランキング取得
-    rank = getRanking()
+    rank = getRanking(mode)
 
     #ログイン
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
