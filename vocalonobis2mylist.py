@@ -3,7 +3,6 @@
 import sys, codecs, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json, os
 userid=os.environ.get("V2M_USERID")
 passwd=os.environ.get("V2M_PASSWD")
-mid=os.environ.get("V2M_MID")
 
 
 def getToken():
@@ -41,8 +40,17 @@ def clear_mylist(mid):
     k = json.load( urllib2.urlopen(cmdurl), encoding='utf8')
 
 
-def getRanking():
-    rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=1&pages=1")
+def getRanking(mode):
+    if mode == "daily" :
+        type = "1"
+    elif mode == "weekly" :
+        type = "2"
+    elif mode == "monthly" :
+        type = "3"
+    else :
+        sys.exit(1)
+
+    rss = urllib2.urlopen("http://vocalonobis.com/feed/?type=" + type + "&pages=1")
     dom = xml.dom.minidom.parse(rss)
     rank = []
     for item in dom.getElementsByTagName("item"):
@@ -56,8 +64,25 @@ def getRanking():
 if __name__ == "__main__" :
     sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 
+    argv = sys.argv
+    argc = len(argv)
+
+    if argc < 2 :
+        print "error: no mylist given"
+        sys.exit(1)
+    else :
+        mid = argv[1]
+
+        if argc == 2 :
+            mode = "daily"
+        elif argv[2] in ["daily", "weekly", "monthly"] :
+            mode = argv[2]
+        else :
+            print "invalid mode: %s" % argv[2]
+            sys.exit(1)
+
     #ランキング取得
-    rank = getRanking()
+    rank = getRanking(mode)
 
     #ログイン
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
