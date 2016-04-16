@@ -3,7 +3,6 @@
 import sys, re, cgi, urllib, urllib2, cookielib, xml.dom.minidom, time, json, os
 userid=os.environ.get("V2M_USERID")
 passwd=os.environ.get("V2M_PASSWD")
-mid=os.environ.get("V2M_MID")
 
 
 def getToken():
@@ -68,12 +67,18 @@ if __name__ == "__main__" :
     argc = len(argv)
 
     if argc < 2 :
-        mode = "daily"
-    elif argv[1] in ["daily", "weekly", "monthly"] :
-        mode = argv[1]
-    else :
-        print "invalid mode: %s\n" % argv[1]
+        print "error: no mylist given"
         sys.exit(1)
+    else :
+        mid = argv[1]
+
+        if argc == 2 :
+            mode = "daily"
+        elif argv[2] in ["daily", "weekly", "monthly"] :
+            mode = argv[2]
+        else :
+            print "invalid mode: %s" % argv[2]
+            sys.exit(1)
 
     #ランキング取得
     rank = getRanking(mode)
