@@ -50,7 +50,7 @@ def getRanking(mode):
     else :
         sys.exit(1)
 
-    rss = urllib.request.urlopen("http://vocalonobis.com/feed/?type=" + type + "&pages=1")
+    rss = urllib.request.urlopen("http://nobis.work/vocalo/feed/?type=" + type + "&pages=1")
     dom = xml.dom.minidom.parse(rss)
     rank = []
     for item in dom.getElementsByTagName("item"):
