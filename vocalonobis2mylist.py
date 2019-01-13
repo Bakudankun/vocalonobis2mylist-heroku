@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-import sys, codecs, re, cgi, urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, http.cookiejar, xml.dom.minidom, time, json, os
+import sys, re, urllib.request, urllib.parse, urllib.error, http.cookiejar, time, json, os
+import xml.etree.ElementTree as ET
 userid=os.environ.get("V2M_USERID")
 passwd=os.environ.get("V2M_PASSWD")
 
 
 def getToken():
-    html = urllib.request.urlopen("http://www.nicovideo.jp/my/mylist").read()
+    resource = urllib.request.urlopen("http://www.nicovideo.jp/my/mylist")
+    html = resource.read().decode(resource.headers.get_content_charset())
     for line in html.splitlines():
         mo = re.match(r'^\s*NicoAPI\.token = "(?P<token>[\d\w-]+)";\s*', line)
         if mo:
@@ -26,7 +28,7 @@ def addvideo_tomylist(mid, item, desc):
     q['description'] = desc
     q['token'] = token
     cmdurl += "?" + urllib.parse.urlencode(q)
-    j = json.load( urllib.request.urlopen(cmdurl), encoding='utf8')
+    urllib.request.urlopen(cmdurl)
 
 
 def clear_mylist(mid):
@@ -37,7 +39,7 @@ def clear_mylist(mid):
     cmdurl = "http://www.nicovideo.jp/api/mylist/delete?group_id=%s&token=%s" % ( mid, token )
     for item_id in id_list:
         cmdurl += "&" + urllib.parse.quote_plus( "id_list[0][]" ) + "=%s" % item_id
-    k = json.load( urllib.request.urlopen(cmdurl), encoding='utf8')
+    urllib.request.urlopen(cmdurl)
 
 
 def getRanking(mode):
@@ -51,19 +53,17 @@ def getRanking(mode):
         sys.exit(1)
 
     rss = urllib.request.urlopen("http://nobis.work/vocalo/feed/?type=" + type + "&pages=1")
-    dom = xml.dom.minidom.parse(rss)
+    tree = ET.parse(rss)
     rank = []
-    for item in dom.getElementsByTagName("item"):
+    for item in tree.findall("./channel/item"):
         rank.append({
-            "title": item.getElementsByTagName("title")[0].firstChild.data,
-            "smid": item.getElementsByTagName("link")[0].firstChild.data.rsplit('/', 1)[-1]
+            "title": item.find("title").text,
+            "smid": item.find("link").text.rsplit('/', 1)[-1]
             })
     return rank
 
 
 if __name__ == "__main__" :
-    sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
-
     argv = sys.argv
     argc = len(argv)
 
@@ -88,7 +88,7 @@ if __name__ == "__main__" :
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
     urllib.request.install_opener(opener)
     urllib.request.urlopen("https://secure.nicovideo.jp/secure/login",
-                    urllib.parse.urlencode( {"mail":userid, "password":passwd}) )
+                    urllib.parse.urlencode({"mail":userid, "password":passwd}).encode("utf-8"))
 
     #トークン取得
     token = getToken()
@@ -98,5 +98,5 @@ if __name__ == "__main__" :
 
     #マイリストに動画を登録
     for i, item in enumerate(rank):
-        addvideo_tomylist(mid, item, str(i+1).zfill(3) )
+        addvideo_tomylist(mid, item, str(i+1).zfill(3))
         time.sleep(1)
