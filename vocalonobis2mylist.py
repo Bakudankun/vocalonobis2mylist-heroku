@@ -8,10 +8,10 @@ passwd = os.environ.get("V2M_PASSWD")
 
 
 def getToken():
-    resource = urllib.request.urlopen("http://www.nicovideo.jp/my/mylist")
+    resource = urllib.request.urlopen("https://www.nicovideo.jp/mylist_add/video/sm9")
     html = resource.read().decode(resource.headers.get_content_charset())
     for line in html.splitlines():
-        mo = re.match(r'^\s*NicoAPI\.token = "(?P<token>[\d\w-]+)";\s*', line)
+        mo = re.match(r"^\s*NicoAPI\.token = '(?P<token>[\d\w-]+)';\s*", line)
         if mo:
             token = mo.group("token")
             break
