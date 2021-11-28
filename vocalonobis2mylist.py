@@ -2,7 +2,6 @@
 
 import sys, urllib.request, urllib.parse, urllib.error, http.cookiejar, time, json, os
 import xml.etree.ElementTree as ET
-from bs4 import BeautifulSoup
 
 
 def get_ranking(mode):
@@ -41,19 +40,6 @@ def login(userid, passwd):
     )
 
 
-def get_video_id(smid):
-    doc = urllib.request.urlopen("https://www.nicovideo.jp/watch/" + smid)
-    soup = BeautifulSoup(doc, "html.parser")
-    api_data = soup.find("div", attrs={"id": "js-initial-watch-data"}).attrs[
-        "data-api-data"
-    ]
-    api_data = json.loads(api_data)
-    for thread in api_data["comment"]["threads"]:
-        if thread["label"] == "default":
-            return thread["id"]
-    return None
-
-
 def mylist_list(mid):
     cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}?pageSize=100&page=1"
     req = urllib.request.Request(cmdurl)
@@ -67,6 +53,8 @@ def mylist_list(mid):
 
 def mylist_clear(mid):
     id_list = [item["itemId"] for item in mylist_list(mid)]
+    if len(id_list) <= 0:
+        return
     cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}/items"
     cmdurl += "?" + urllib.parse.urlencode({"itemIds": ",".join(map(str, id_list))})
     req = urllib.request.Request(cmdurl, method="DELETE")
@@ -79,7 +67,7 @@ def mylist_clear(mid):
 def mylist_add(mid, smid, desc):
     cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}/items"
     q = {}
-    q["itemId"] = get_video_id(smid)
+    q["itemId"] = smid
     q["description"] = desc
     cmdurl += "?" + urllib.parse.urlencode(q)
     req = urllib.request.Request(cmdurl, method="POST")
@@ -116,10 +104,11 @@ if __name__ == "__main__":
     login(userid, passwd)
 
     # マイリストから動画を全削除
+    print("clearing mylist...")
     mylist_clear(mid)
 
     # マイリストに動画を登録
     for i, item in enumerate(rank):
-        time.sleep(10)
+        time.sleep(1)
         print(f"adding rank {i + 1:03}: {item['smid']}\t{item['title']}")
         mylist_add(mid, item["smid"], f"{i + 1:03}")
