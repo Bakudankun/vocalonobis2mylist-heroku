@@ -1,57 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf8 -*-
-import sys, re, urllib.request, urllib.parse, urllib.error, http.cookiejar, time, json, os
+#!/usr/bin/env python3
+
+import sys, urllib.request, urllib.parse, urllib.error, http.cookiejar, time, json, os
 import xml.etree.ElementTree as ET
-
-userid = os.environ.get("V2M_USERID")
-passwd = os.environ.get("V2M_PASSWD")
+from bs4 import BeautifulSoup
 
 
-def getToken():
-    resource = urllib.request.urlopen("https://www.nicovideo.jp/mylist_add/video/sm9")
-    html = resource.read().decode(resource.headers.get_content_charset())
-    for line in html.splitlines():
-        mo = re.match(r"^\s*NicoAPI\.token = '(?P<token>[\d\w-]+)';\s*", line)
-        if mo:
-            token = mo.group("token")
-            break
-    assert token
-    return token
-
-
-def addvideo_tomylist(mid, item, desc):
-    print("adding rank %s: %s\t%s" % (desc, item["smid"], item["title"]))
-    cmdurl = "http://www.nicovideo.jp/api/mylist/add"
-    q = {}
-    q["group_id"] = mid
-    q["item_type"] = 0
-    q["item_id"] = item["smid"]
-    q["description"] = desc
-    q["token"] = token
-    cmdurl += "?" + urllib.parse.urlencode(q)
-    urllib.request.urlopen(cmdurl)
-
-
-def clear_mylist(mid):
-    j = json.load(
-        urllib.request.urlopen(
-            "http://www.nicovideo.jp/api/mylist/list?group_id=" + str(mid)
-        ),
-        encoding="utf8",
-    )
-    id_list = []
-    for item in j["mylistitem"]:
-        id_list.append(item["item_id"])
-    cmdurl = "http://www.nicovideo.jp/api/mylist/delete?group_id=%s&token=%s" % (
-        mid,
-        token,
-    )
-    for item_id in id_list:
-        cmdurl += "&" + urllib.parse.quote_plus("id_list[0][]") + "=%s" % item_id
-    urllib.request.urlopen(cmdurl)
-
-
-def getRanking(mode):
+def get_ranking(mode):
     if mode == "daily":
         type = "1"
     elif mode == "weekly":
@@ -76,6 +30,65 @@ def getRanking(mode):
     return rank
 
 
+def login(userid, passwd):
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
+    )
+    urllib.request.install_opener(opener)
+    urllib.request.urlopen(
+        "https://secure.nicovideo.jp/secure/login",
+        urllib.parse.urlencode({"mail": userid, "password": passwd}).encode("utf-8"),
+    )
+
+
+def get_video_id(smid):
+    doc = urllib.request.urlopen("https://www.nicovideo.jp/watch/" + smid)
+    soup = BeautifulSoup(doc, "html.parser")
+    api_data = soup.find("div", attrs={"id": "js-initial-watch-data"}).attrs[
+        "data-api-data"
+    ]
+    api_data = json.loads(api_data)
+    for thread in api_data["comment"]["threads"]:
+        if thread["label"] == "default":
+            return thread["id"]
+    return None
+
+
+def mylist_list(mid):
+    cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}?pageSize=100&page=1"
+    req = urllib.request.Request(cmdurl)
+    req.add_header("X-Frontend-Id", "6")
+    req.add_header("X-Frontend-Version", "0")
+    req.add_header("X-Request-With", "https://www.nicovideo.jp")
+    doc = urllib.request.urlopen(req)
+    j = json.load(doc, encoding="utf8")
+    return j["data"]["mylist"]["items"]
+
+
+def mylist_clear(mid):
+    id_list = [item["itemId"] for item in mylist_list(mid)]
+    cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}/items"
+    cmdurl += "?" + urllib.parse.urlencode({"itemIds": ",".join(map(str, id_list))})
+    req = urllib.request.Request(cmdurl, method="DELETE")
+    req.add_header("X-Frontend-Id", "6")
+    req.add_header("X-Frontend-Version", "0")
+    req.add_header("X-Request-With", "https://www.nicovideo.jp")
+    urllib.request.urlopen(req)
+
+
+def mylist_add(mid, smid, desc):
+    cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}/items"
+    q = {}
+    q["itemId"] = get_video_id(smid)
+    q["description"] = desc
+    cmdurl += "?" + urllib.parse.urlencode(q)
+    req = urllib.request.Request(cmdurl, method="POST")
+    req.add_header("X-Frontend-Id", "6")
+    req.add_header("X-Frontend-Version", "0")
+    req.add_header("X-Request-With", "https://www.nicovideo.jp")
+    urllib.request.urlopen(req)
+
+
 if __name__ == "__main__":
     argv = sys.argv
     argc = len(argv)
@@ -95,25 +108,18 @@ if __name__ == "__main__":
             sys.exit(1)
 
     # ランキング取得
-    rank = getRanking(mode)
+    rank = get_ranking(mode)
 
     # ログイン
-    opener = urllib.request.build_opener(
-        urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
-    )
-    urllib.request.install_opener(opener)
-    urllib.request.urlopen(
-        "https://secure.nicovideo.jp/secure/login",
-        urllib.parse.urlencode({"mail": userid, "password": passwd}).encode("utf-8"),
-    )
-
-    # トークン取得
-    token = getToken()
+    userid = os.environ.get("V2M_USERID")
+    passwd = os.environ.get("V2M_PASSWD")
+    login(userid, passwd)
 
     # マイリストから動画を全削除
-    clear_mylist(mid)
+    mylist_clear(mid)
 
     # マイリストに動画を登録
     for i, item in enumerate(rank):
-        addvideo_tomylist(mid, item, str(i + 1).zfill(3))
-        time.sleep(1)
+        time.sleep(10)
+        print(f"adding rank {i + 1:03}: {item['smid']}\t{item['title']}")
+        mylist_add(mid, item["smid"], f"{i + 1:03}")
