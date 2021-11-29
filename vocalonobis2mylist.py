@@ -4,6 +4,13 @@ import sys, urllib.request, urllib.parse, urllib.error, http.cookiejar, time, js
 import xml.etree.ElementTree as ET
 
 
+REQUEST_HEADER = {
+    "X-Frontend-Id": "6",
+    "X-Frontend-Version": "0",
+    "X-Request-With": "https://www.nicovideo.jp",
+}
+
+
 def get_ranking(mode):
     if mode == "daily":
         type = "1"
@@ -18,15 +25,13 @@ def get_ranking(mode):
         "http://nobis.work/vocalo/feed/?type=" + type + "&pages=1"
     )
     tree = ET.parse(rss)
-    rank = []
-    for item in tree.findall("./channel/item"):
-        rank.append(
-            {
-                "title": item.find("title").text,
-                "smid": item.find("link").text.rsplit("/", 1)[-1],
-            }
-        )
-    return rank
+    return [
+        {
+            "title": item.find("title").text,
+            "smid": item.find("link").text.rsplit("/", 1)[-1],
+        }
+        for item in tree.findall("./channel/item")
+    ]
 
 
 def login(userid, passwd):
@@ -42,10 +47,7 @@ def login(userid, passwd):
 
 def mylist_list(mid):
     cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}?pageSize=100&page=1"
-    req = urllib.request.Request(cmdurl)
-    req.add_header("X-Frontend-Id", "6")
-    req.add_header("X-Frontend-Version", "0")
-    req.add_header("X-Request-With", "https://www.nicovideo.jp")
+    req = urllib.request.Request(cmdurl, headers=REQUEST_HEADER)
     doc = urllib.request.urlopen(req)
     j = json.load(doc, encoding="utf8")
     return j["data"]["mylist"]["items"]
@@ -57,10 +59,7 @@ def mylist_clear(mid):
         return
     cmdurl = f"https://nvapi.nicovideo.jp/v1/users/me/mylists/{mid}/items"
     cmdurl += "?" + urllib.parse.urlencode({"itemIds": ",".join(map(str, id_list))})
-    req = urllib.request.Request(cmdurl, method="DELETE")
-    req.add_header("X-Frontend-Id", "6")
-    req.add_header("X-Frontend-Version", "0")
-    req.add_header("X-Request-With", "https://www.nicovideo.jp")
+    req = urllib.request.Request(cmdurl, method="DELETE", headers=REQUEST_HEADER)
     urllib.request.urlopen(req)
 
 
@@ -70,10 +69,7 @@ def mylist_add(mid, smid, desc):
     q["itemId"] = smid
     q["description"] = desc
     cmdurl += "?" + urllib.parse.urlencode(q)
-    req = urllib.request.Request(cmdurl, method="POST")
-    req.add_header("X-Frontend-Id", "6")
-    req.add_header("X-Frontend-Version", "0")
-    req.add_header("X-Request-With", "https://www.nicovideo.jp")
+    req = urllib.request.Request(cmdurl, method="POST", headers=REQUEST_HEADER)
     urllib.request.urlopen(req)
 
 
